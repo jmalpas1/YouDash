@@ -1,19 +1,24 @@
-
 name: Build YouDash Module
 
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: macos-15-intel
+    timeout-minutes: 30
 
     steps:
       - name: Checkout source
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
@@ -24,9 +29,13 @@ jobs:
       - name: Compile CarPlay module
         run: |
           python3 scripts/build_carplay.py --compile-only
+          test -s build/YouTubeCarPlay.dylib
+          file build/YouTubeCarPlay.dylib
 
       - name: Upload compiled module
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: YouDash-CarPlay-Module
           path: build/YouTubeCarPlay.dylib
+          if-no-files-found: error
+          retention-days: 14
