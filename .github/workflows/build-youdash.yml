@@ -1,0 +1,32 @@
+
+name: Build YouDash Module
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install -r requirements-build.txt
+
+      - name: Compile CarPlay module
+        run: |
+          python3 scripts/build_carplay.py --compile-only
+
+      - name: Upload compiled module
+        uses: actions/upload-artifact@v4
+        with:
+          name: YouDash-CarPlay-Module
+          path: build/YouTubeCarPlay.dylib
