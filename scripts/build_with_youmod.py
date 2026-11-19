@@ -119,6 +119,8 @@ def main():
     parser.add_argument("--bundle-id", default="io.github.youtubecar.app")
     parser.add_argument("--reported-version", default="native",
                         help="Default native retains the actual YouTube version")
+    parser.add_argument("--profile", type=Path, help="Approved Apple provisioning profile; omit for unsigned")
+    parser.add_argument("--identity", help="Optional local codesigning identity fingerprint")
     parser.add_argument("--preflight-only", action="store_true",
                         help="Inspect inputs without modifying them; works on Linux/macOS")
     args = parser.parse_args()
@@ -143,10 +145,18 @@ def main():
             "-u", "-w", "-e", "-f", deb)
         stage_report = ipa_report(stage, require_youmod=True)
         print("YouMod stage:", json.dumps(stage_report, indent=2))
-        run(sys.executable, ROOT / "scripts/build_carplay.py",
-            "--ipa", stage, "--unsigned", "--bundle-id", args.bundle_id,
-            "--reported-version", args.reported_version)
-        dist = ROOT / "dist" / ("YouTubeCarPlay-" + source["version"] + "-unsigned.ipa")
+        build_command = [sys.executable, ROOT / "scripts/build_carplay.py",
+                         "--ipa", stage, "--bundle-id", args.bundle_id,
+                         "--reported-version", args.reported_version]
+        if args.profile:
+            build_command.extend(["--profile", args.profile.resolve()])
+            if args.identity:
+                build_command.extend(["--identity", args.identity])
+        else:
+            build_command.append("--unsigned")
+        run(*build_command)
+        suffix = "" if args.profile else "-unsigned"
+        dist = ROOT / "dist" / ("YouTubeCarPlay-" + source["version"] + suffix + ".ipa")
         final = ipa_report(dist, require_youmod=True)
         print("Unsigned IPA:", dist, "\nFinal checks:", json.dumps(final, indent=2))
         print("Do not upload this IPA or proprietary inputs to a public GitHub repository.")
